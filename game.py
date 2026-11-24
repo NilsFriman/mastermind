@@ -1,18 +1,19 @@
 
 
+from copy import copy
 import random
 
 
-possible_colors = [
+POSSIBLE_COLORS = (
     "BLU",
     "RED",
     "GRE",
     "WHI",
     "YEL",
     "BRO",
-    "BLA"
+    "BLA",
     "ORA"
-]
+)
 
 
 class Row:
@@ -24,16 +25,11 @@ class Row:
 
 class Game:
 
-    def __init__(self):
-        self.solution = self.random_solution()
-        self.rows = []
-
-    '''def __init__(self, solution: tuple):
-        self.solution = solution
-
-    def __init__(self, solution: tuple, rows):
-        self.solution = solution
-        self.rows = rows'''
+    def __init__(self, solution: tuple | None = None, rows: list | None = None):
+        self.solution = solution if solution is not None else self.random_solution()
+        self.rows = list(rows) if rows is not None else []
+        self.over = False
+        self.row_length = 4
 
     def copy(self):
         return Game(self.solution, self.rows)
@@ -42,7 +38,9 @@ class Game:
         self.rows.append(row)
 
     def play_colors(self, colors):
-        result = self.calculate_result(colors)
+        result = self.calculate_result(copy(colors))
+        if result["black"] == self.row_length:
+            self.over = True
         self.add_row(Row(tuple(colors), result))
 
     def calculate_result(self, colors):
@@ -56,8 +54,6 @@ class Game:
 
         for i in range(len(solution_copy)):
             if solution_copy[i] == colors[i] and colors[i]:
-                print(
-                    f"Black, {solution_copy[i]}. c: {colors}, s_c: {solution_copy}")
                 result["black"] += 1
                 colors[i] = None
                 solution_copy[i] = None
@@ -66,18 +62,16 @@ class Game:
             if color_guess and color_guess in solution_copy:
                 result["white"] += 1
                 colors[colors.index(color_guess)] = None
-                solution_copy.remove(color_guess)
-                print(
-                    f"White, {color_guess}. c: {colors}, s_c: {solution_copy}")
+                solution_copy[solution_copy.index(color_guess)] = None
 
         return result
 
     def random_solution(self):
         return (
-            random.choice(possible_colors),
-            random.choice(possible_colors),
-            random.choice(possible_colors),
-            random.choice(possible_colors)
+            random.choice(POSSIBLE_COLORS),
+            random.choice(POSSIBLE_COLORS),
+            random.choice(POSSIBLE_COLORS),
+            random.choice(POSSIBLE_COLORS)
         )
 
     def __str__(self):
@@ -91,10 +85,10 @@ def ui(game: Game):
     while True:
         print(game)
         next_guess = []
-        while len(next_guess) < 4:
+        while len(next_guess) < game.row_length:
             print("Your current guess:", next_guess)
             color = input("Color? (\"RESTART\" to restart)")
-            if color in possible_colors:
+            if color in POSSIBLE_COLORS:
                 next_guess.append(color)
             elif color == "RESTART":
                 next_guess = []
@@ -105,6 +99,10 @@ def ui(game: Game):
         ready = input("Send it? (enter for yes)")
         if not ready:  # Meaning ready (naturally)
             game.play_colors(next_guess)
+            if game.over:
+                print("You win!")
+                print(game)
+                break
         else:
             print("Didn't play.")
 
